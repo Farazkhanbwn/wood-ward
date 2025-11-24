@@ -1,41 +1,20 @@
 "use client"
 
 import { useState } from "react"
-import { useQuery } from "@tanstack/react-query"
-import { api } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { BarChart3, Users, Clock, TrendingUp, Eye, ArrowLeft } from "lucide-react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { usePlatformStats, useCompanyStats, useUserCallSessions } from "@/hooks/use-analytics"
+import { useUsers } from "@/hooks/use-users"
 
 export default function AdminAnalyticsPage() {
   const [selectedUser, setSelectedUser] = useState<string | null>(null)
-  const { data: platformStats, isLoading: loadingPlatform, refetch: refetchPlatform } = useQuery({
-    queryKey: ['platformStats'],
-    queryFn: () => api.getPlatformStats(),
-    refetchInterval: 10000, // Auto-refresh every 10 seconds
-    staleTime: 0 // Always consider data stale
-  })
-
-  const { data: companyStats, isLoading: loadingCompanies, refetch: refetchCompany } = useQuery({
-    queryKey: ['companyStats'],
-    queryFn: () => api.getCompanyStats(),
-    refetchInterval: 10000, // Auto-refresh every 10 seconds
-    staleTime: 0 // Always consider data stale
-  })
-
-  const { data: allUsers } = useQuery({
-    queryKey: ['allUsers'],
-    queryFn: () => api.getAllUsers(),
-    enabled: !selectedUser
-  })
-
-  const { data: userSessions, isLoading: loadingSessions } = useQuery({
-    queryKey: ['userSessions', selectedUser],
-    queryFn: () => api.getUserCallSessions(selectedUser!, 50, 0),
-    enabled: !!selectedUser
-  })
+  const { data: platformStats, isLoading: loadingPlatform, refetch: refetchPlatform } = usePlatformStats()
+  const { data: companyStats, isLoading: loadingCompanies, refetch: refetchCompany } = useCompanyStats()
+  const { data: allUsers } = useUsers()
+  const { data: userSessions, isLoading: loadingSessions } = useUserCallSessions(selectedUser)
 
   if (selectedUser) {
     const user = allUsers?.users?.find((u: any) => u._id === selectedUser)
@@ -62,8 +41,11 @@ export default function AdminAnalyticsPage() {
           <CardContent>
             {loadingSessions ? (
               <div className="text-center py-8">Loading...</div>
-            ) : sessions.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">No call sessions found</div>
+            ) : !sessions || sessions.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <p className="font-medium">No call sessions found</p>
+                <p className="text-sm mt-2">This user hasn't completed any practice calls yet.</p>
+              </div>
             ) : (
               <Table>
                 <TableHeader>
@@ -76,27 +58,35 @@ export default function AdminAnalyticsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {sessions.map((session: any) => (
-                    <TableRow key={session._id}>
-                      <TableCell>{new Date(session.createdAt).toLocaleDateString()}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{session.callType}</Badge>
-                      </TableCell>
-                      <TableCell>{Math.floor(session.duration / 60)}m {session.duration % 60}s</TableCell>
-                      <TableCell className="text-right">
-                        <span className={`font-semibold ${
-                          session.feedback?.overallScore >= 80 ? 'text-green-600' :
-                          session.feedback?.overallScore >= 60 ? 'text-yellow-600' :
-                          'text-red-600'
-                        }`}>
-                          {session.feedback?.overallScore || 0}
-                        </span>
-                      </TableCell>
-                      <TableCell className="max-w-xs truncate">
-                        {session.feedback?.improvementPoints?.[0] || 'No feedback'}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {sessions.map((session: any) => {
+                    const date = session.createdAt ? new Date(session.createdAt) : null
+                    const isValidDate = date && !isNaN(date.getTime())
+                    const duration = session.duration || 0
+                    const minutes = Math.floor(duration / 60)
+                    const seconds = duration % 60
+                    
+                    return (
+                      <TableRow key={session._id}>
+                        <TableCell>{isValidDate ? date.toLocaleDateString() : 'N/A'}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{session.callType || 'Unknown'}</Badge>
+                        </TableCell>
+                        <TableCell>{minutes}m {seconds}s</TableCell>
+                        <TableCell className="text-right">
+                          <span className={`font-semibold ${
+                            session.feedback?.overallScore >= 80 ? 'text-green-600' :
+                            session.feedback?.overallScore >= 60 ? 'text-yellow-600' :
+                            'text-red-600'
+                          }`}>
+                            {session.feedback?.overallScore || 0}
+                          </span>
+                        </TableCell>
+                        <TableCell className="max-w-xs truncate">
+                          {session.feedback?.improvementPoints?.[0] || 'No feedback'}
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
                 </TableBody>
               </Table>
             )}
@@ -129,18 +119,9 @@ export default function AdminAnalyticsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Platform Analytics</h1>
-          <p className="text-gray-600 mt-2">Overview of all platform activity and performance</p>
-        </div>
-        <Button 
-          onClick={() => { refetchPlatform(); refetchCompany(); }}
-          variant="outline"
-        >
-          <BarChart3 className="h-4 w-4 mr-2" />
-          Refresh Data
-        </Button>
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900">Platform Analytics</h1>
+        <p className="text-gray-600 mt-2">Overview of all platform activity and performance</p>
       </div>
 
       {/* Platform Stats Cards */}

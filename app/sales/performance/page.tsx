@@ -1,22 +1,18 @@
 "use client"
 
-import { useQuery } from "@tanstack/react-query"
-import { api } from "@/lib/api"
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { BarChart3, Clock, TrendingUp, Phone } from "lucide-react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { Pagination } from "@/components/ui/pagination"
+import { useDashboardStats, useCallSessions } from "@/hooks/use-call-sessions"
 
 export default function PerformancePage() {
-  const { data: statsData, isLoading: loadingStats } = useQuery({
-    queryKey: ['dashboardStats'],
-    queryFn: () => api.getDashboardStats()
-  })
-
-  const { data: sessionsData, isLoading: loadingSessions } = useQuery({
-    queryKey: ['allSessions'],
-    queryFn: () => api.getCallSessions(100, 0)
-  })
+  const [page, setPage] = useState(1)
+  const limit = 10
+  const { data: statsData, isLoading: loadingStats } = useDashboardStats()
+  const { data: sessionsData, isLoading: loadingSessions } = useCallSessions(limit, (page - 1) * limit)
 
   // Debug: Console mein data check karo
   console.log('Stats Data:', statsData)
@@ -119,7 +115,7 @@ export default function PerformancePage() {
       {/* All Sessions Table */}
       <Card>
         <CardHeader>
-          <CardTitle>All Practice Sessions ({sessions.length})</CardTitle>
+          <CardTitle>All Practice Sessions ({sessionsData?.total || 0})</CardTitle>
           <p className="text-sm text-gray-600">Complete history of your practice calls</p>
         </CardHeader>
         <CardContent>
@@ -180,6 +176,15 @@ export default function PerformancePage() {
             </div>
           )}
         </CardContent>
+        {sessionsData?.total && sessionsData.total > limit && (
+          <Pagination
+            currentPage={page}
+            totalPages={Math.ceil(sessionsData.total / limit)}
+            onPageChange={setPage}
+            totalItems={sessionsData.total}
+            itemsPerPage={limit}
+          />
+        )}
       </Card>
     </div>
   )

@@ -1,8 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { useQuery } from "@tanstack/react-query"
-import { api } from "@/lib/api"
+import { usePlaybooks } from "@/hooks/use-playbooks"
+import { useDashboardStats, useCallSessions } from "@/hooks/use-call-sessions"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
@@ -32,32 +32,9 @@ export function DashboardTab({ onNavigate }: DashboardTabProps) {
     scriptType: "call",
   })
 
-  const { data: playbooksData } = useQuery({
-    queryKey: ['playbooks'],
-    queryFn: async () => {
-      const response = await api.getPlaybooks()
-      if (response.success) {
-        return response.playbooks
-      }
-      return []
-    },
-  })
-
-  const { data: dashboardStats, isLoading: isLoadingStats } = useQuery({
-    queryKey: ['dashboardStats'],
-    queryFn: async () => {
-      const response = await api.getDashboardStats()
-      if (response.success) {
-        return response.stats
-      }
-      return null
-    },
-  })
-
-  const { data: allSessionsData } = useQuery({
-    queryKey: ['allSessionsForStats'],
-    queryFn: () => api.getCallSessions(100, 0)
-  })
+  const { data: playbooksData } = usePlaybooks()
+  const { data: dashboardStats, isLoading: isLoadingStats } = useDashboardStats()
+  const { data: allSessionsData } = useCallSessions(100, 0)
 
   const allSessions = allSessionsData?.sessions || []
 

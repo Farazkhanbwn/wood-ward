@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
+import { usePlaybooks } from "@/hooks/use-playbooks"
 import { api } from "@/lib/api"
 import { toast } from "sonner"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -126,25 +127,7 @@ export function PlaybooksTab({ onNavigate, startInCreateMode = false, initialPla
   const [editablePlaybook, setEditablePlaybook] = useState<any>(null)
   const [currentPlaybookId, setCurrentPlaybookId] = useState<string | null>(null)
 
-  const { data: playbooksData, isLoading: isLoadingPlaybooks } = useQuery({
-    queryKey: ['playbooks'],
-    queryFn: async () => {
-      const response = await api.getPlaybooks()
-      if (response.success) {
-        return response.playbooks.map((pb: any) => ({
-          id: pb._id,
-          title: pb.title || 'Untitled Playbook',
-          date: pb.createdAt || new Date().toISOString(),
-          lastEdited: pb.updatedAt || pb.createdAt || new Date().toISOString(),
-          duration: "N/A",
-          size: "N/A",
-        }))
-      }
-      return []
-    },
-    staleTime: 0,
-    gcTime: 0,
-  })
+  const { data: playbooksData, isLoading: isLoadingPlaybooks } = usePlaybooks()
 
   const playbooks = Array.isArray(playbooksData) ? playbooksData : []
 

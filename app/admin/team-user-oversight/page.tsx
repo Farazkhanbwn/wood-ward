@@ -17,7 +17,9 @@ import {
     Edit,
     Eye,
     FileDown,
+    FilePlus,
     Mail,
+    Phone,
     Search,
     User,
     Users
@@ -26,6 +28,7 @@ import { UserRowSkeleton } from "@/components/ui/loading-skeletons"
 import { useState, useEffect } from "react"
 import { useUsers } from "@/hooks/use-users"
 import { useSessions } from "@/hooks/use-sessions"
+import { useUserActivities } from "@/hooks/use-user-activities"
 import { formatDistanceToNow, format } from "date-fns"
 
 interface AdminUser {
@@ -39,6 +42,7 @@ interface AdminUser {
     }
     lastLoginAt?: string
     loginCount?: number
+    passwordChangedAt?: string
     createdAt: string
 }
 
@@ -79,6 +83,7 @@ export default function TeamUserOversightPage() {
     }
 
     const { data: sessionsData } = useSessions(activityUserId || '')
+    const { activities, isLoading: activitiesLoading } = useUserActivities(activityUserId || '')
 
     const closeActivityModal = () => {
         setShowActivityModal(false)
@@ -194,7 +199,27 @@ export default function TeamUserOversightPage() {
         doc.text(`Time Spent: ${timeSpent}`, 20, yPos)
         yPos += 15
 
+        // Recent Actions
+        doc.setFontSize(16)
+        doc.text('Recent Actions', 20, yPos)
+        yPos += 10
+        doc.setFontSize(10)
+        
+        if (activities && activities.length > 0) {
+            activities.forEach((activity: any) => {
+                if (yPos > 270) { doc.addPage(); yPos = 20 }
+                const text = `${activity.description} - ${formatDistanceToNow(activity.timestamp, { addSuffix: true })}`
+                const lines = doc.splitTextToSize(text, 170)
+                doc.text(lines, 20, yPos)
+                yPos += lines.length * 5 + 3
+            })
+        } else {
+            doc.text('No recent actions', 20, yPos)
+        }
+        yPos += 10
+
         // Recent Login History
+        if (yPos > 250) { doc.addPage(); yPos = 20 }
         doc.setFontSize(16)
         doc.text('Recent Login History', 20, yPos)
         yPos += 10
@@ -268,10 +293,28 @@ export default function TeamUserOversightPage() {
             new Paragraph({ text: `Time Spent: ${timeSpent}` }),
             new Paragraph({ text: '' }),
             new Paragraph({
-                text: 'Recent Login History',
+                text: 'Recent Actions',
                 heading: HeadingLevel.HEADING_2,
             }),
         ]
+
+        if (activities && activities.length > 0) {
+            activities.forEach((activity: any) => {
+                children.push(
+                    new Paragraph({ text: `${activity.description} - ${formatDistanceToNow(activity.timestamp, { addSuffix: true })}` })
+                )
+            })
+        } else {
+            children.push(new Paragraph({ text: 'No recent actions' }))
+        }
+
+        children.push(
+            new Paragraph({ text: '' }),
+            new Paragraph({
+                text: 'Recent Login History',
+                heading: HeadingLevel.HEADING_2,
+            })
+        )
 
         if (sessionsData?.sessions && sessionsData.sessions.length > 0) {
             sessionsData.sessions.slice(0, 5).forEach((s: any) => {
@@ -494,14 +537,10 @@ export default function TeamUserOversightPage() {
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="text-center p-4 border rounded-lg">
                                             <p className="text-2xl font-bold text-primary">{user.loginCount || 0}</p>
                                             <p className="text-sm text-muted-foreground">Total Logins</p>
-                                        </div>
-                                        <div className="text-center p-4 border rounded-lg">
-                                            <p className="text-2xl font-bold text-muted-foreground">N/A</p>
-                                            <p className="text-sm text-muted-foreground">Projects</p>
                                         </div>
                                         <div className="text-center p-4 border rounded-lg">
                                             <p className="text-2xl font-bold text-muted-foreground">N/A</p>
@@ -550,7 +589,7 @@ export default function TeamUserOversightPage() {
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="text-center p-4 border rounded-lg">
                                             <p className="text-2xl font-bold text-primary">{user.loginCount || 0}</p>
                                             <p className="text-sm text-muted-foreground">Total Logins</p>
@@ -571,14 +610,6 @@ export default function TeamUserOversightPage() {
                                                 })()}
                                             </p>
                                             <p className="text-sm text-muted-foreground">Time Spent</p>
-                                        </div>
-                                        <div className="text-center p-4 border rounded-lg">
-                                            <p className="text-2xl font-bold text-muted-foreground">N/A</p>
-                                            <p className="text-sm text-muted-foreground">Actions</p>
-                                        </div>
-                                        <div className="text-center p-4 border rounded-lg">
-                                            <p className="text-2xl font-bold text-muted-foreground">N/A</p>
-                                            <p className="text-sm text-muted-foreground">Projects</p>
                                         </div>
                                     </div>
 
@@ -624,34 +655,26 @@ export default function TeamUserOversightPage() {
                                                 <CardTitle className="text-base">Recent Actions</CardTitle>
                                             </CardHeader>
                                             <CardContent className="space-y-3">
-                                                <div className="flex items-center gap-3 p-2 border rounded">
-                                                    <Activity className="h-4 w-4 text-blue-500" />
-                                                    <div className="flex-1">
-                                                        <p className="text-sm font-medium">Created new project</p>
-                                                        <p className="text-xs text-muted-foreground">2 hours ago</p>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center gap-3 p-2 border rounded">
-                                                    <Edit className="h-4 w-4 text-green-500" />
-                                                    <div className="flex-1">
-                                                        <p className="text-sm font-medium">Updated profile settings</p>
-                                                        <p className="text-xs text-muted-foreground">5 hours ago</p>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center gap-3 p-2 border rounded">
-                                                    <Eye className="h-4 w-4 text-purple-500" />
-                                                    <div className="flex-1">
-                                                        <p className="text-sm font-medium">Downloaded 3 reports</p>
-                                                        <p className="text-xs text-muted-foreground">1 day ago</p>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center gap-3 p-2 border rounded">
-                                                    <Users className="h-4 w-4 text-orange-500" />
-                                                    <div className="flex-1">
-                                                        <p className="text-sm font-medium">Shared 2 documents</p>
-                                                        <p className="text-xs text-muted-foreground">2 days ago</p>
-                                                    </div>
-                                                </div>
+                                                {activities && activities.length > 0 ? (
+                                                    activities.map((activity: any, index: number) => {
+                                                        const IconComponent = activity.icon === 'phone' ? Phone : activity.icon === 'file-plus' ? FilePlus : Edit
+                                                        const colorClass = activity.color === 'blue' ? 'text-blue-500' : activity.color === 'green' ? 'text-green-500' : 'text-purple-500'
+                                                        
+                                                        return (
+                                                            <div key={index} className="flex items-center gap-3 p-2 border rounded">
+                                                                <IconComponent className={`h-4 w-4 ${colorClass}`} />
+                                                                <div className="flex-1">
+                                                                    <p className="text-sm font-medium">{activity.description}</p>
+                                                                    <p className="text-xs text-muted-foreground">
+                                                                        {formatDistanceToNow(activity.timestamp, { addSuffix: true })}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        )
+                                                    })
+                                                ) : (
+                                                    <p className="text-sm text-muted-foreground text-center py-4">No recent actions</p>
+                                                )}
                                             </CardContent>
                                         </Card>
                                     </div>
@@ -684,9 +707,7 @@ export default function TeamUserOversightPage() {
                                                 <div className="space-y-2">
                                                     <p className="text-sm font-medium">Security Status</p>
                                                     <div className="text-sm text-muted-foreground space-y-1">
-                                                        <p>• Two-Factor Auth: ✅ Enabled</p>
-                                                        <p>• Password Last Changed: 30 days ago</p>
-                                                        <p>• Suspicious Activity: ❌ None detected</p>
+                                                        <p>• Password Last Changed: {user.passwordChangedAt ? formatDistanceToNow(new Date(user.passwordChangedAt), { addSuffix: true }) : 'Never'}</p>
                                                         <p>• Account Status: ✅ Secure</p>
                                                     </div>
                                                 </div>

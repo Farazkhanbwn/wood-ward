@@ -1,12 +1,10 @@
-import { useQuery } from '@tanstack/react-query';
-import { api } from '@/lib/api';
+import { useQuery } from '@tanstack/react-query'
+import { api } from '@/lib/api'
 
-export const useSessions = (userId: string) => {
+export function useSessions(userId: string) {
   return useQuery({
-    queryKey: ['sessions', userId],
-    queryFn: async () => {
-      return await api.getUserSessions(userId);
-    },
-    enabled: !!userId,
-  });
-};
+    queryKey: ['userSessions', userId],
+    queryFn: () => api.getUserSessions(userId),
+    enabled: !!userId
+  })
+}
