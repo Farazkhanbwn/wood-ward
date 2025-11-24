@@ -54,6 +54,13 @@ export function DashboardTab({ onNavigate }: DashboardTabProps) {
     },
   })
 
+  const { data: allSessionsData } = useQuery({
+    queryKey: ['allSessionsForStats'],
+    queryFn: () => api.getCallSessions(100, 0)
+  })
+
+  const allSessions = allSessionsData?.sessions || []
+
   const playbookCount = playbooksData?.length ?? null
 
   const stats = [
@@ -67,7 +74,7 @@ export function DashboardTab({ onNavigate }: DashboardTabProps) {
     },
     {
       title: "Call Simulations",
-      value: dashboardStats?.totalSessions?.toString() || "0",
+      value: allSessions.length.toString(),
       description: "Practice sessions completed",
       icon: Phone,
       color: "text-green-600",
@@ -75,7 +82,9 @@ export function DashboardTab({ onNavigate }: DashboardTabProps) {
     },
     {
       title: "Average Score",
-      value: dashboardStats?.averageScore || "0",
+      value: allSessions.length > 0 
+        ? (allSessions.reduce((sum: number, s: any) => sum + (s.feedback?.overallScore || 0), 0) / allSessions.length).toFixed(1)
+        : "0",
       description: "Out of 100 points",
       icon: Star,
       color: "text-yellow-600",
@@ -83,7 +92,9 @@ export function DashboardTab({ onNavigate }: DashboardTabProps) {
     },
     {
       title: "Time Practiced",
-      value: dashboardStats?.totalHours ? `${dashboardStats.totalHours}h` : "0h",
+      value: allSessions.length > 0
+        ? `${(allSessions.reduce((sum: number, s: any) => sum + (s.duration || 0), 0) / 3600).toFixed(1)}h`
+        : "0h",
       description: "Total practice time",
       icon: Clock,
       color: "text-purple-600",

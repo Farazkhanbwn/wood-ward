@@ -2,7 +2,7 @@
 import { useState } from "react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { LayoutDashboard, Phone, LogOut, BookOpen } from "lucide-react"
+import { LayoutDashboard, Phone, LogOut, BookOpen, BarChart3 } from "lucide-react"
 import { usePathname, useRouter } from "next/navigation"
 import { useConfirmation } from "@/hooks/use-confirmation"
 import { api } from "@/lib/api"
@@ -13,6 +13,7 @@ const tabs = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, href: "/sales" },
   { id: "playbooks", label: "Playbooks", icon: BookOpen, href: "/sales/playbooks" },
   { id: "call-simulation", label: "Call Simulation", icon: Phone, href: "/sales/call-simulation" },
+  { id: "performance", label: "My Performance", icon: BarChart3, href: "/sales/performance" },
 ]
 
 interface SidebarNavigationProps {

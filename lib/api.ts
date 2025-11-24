@@ -450,4 +450,26 @@ export const api = {
     }
     return json;
   },
+
+  // Admin Analytics APIs
+  async getPlatformStats() {
+    const res = await fetch(`${API_URL}/admin/platform-stats`, {
+      credentials: 'include',
+    });
+    return res.json();
+  },
+
+  async getCompanyStats() {
+    const res = await fetch(`${API_URL}/admin/company-stats`, {
+      credentials: 'include',
+    });
+    return res.json();
+  },
+
+  async getUserCallSessions(userId: string, limit = 10, skip = 0) {
+    const res = await fetch(`${API_URL}/admin/users/${userId}/call-sessions?limit=${limit}&skip=${skip}`, {
+      credentials: 'include',
+    });
+    return res.json();
+  },
 };
