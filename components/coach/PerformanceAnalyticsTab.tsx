@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Users, TrendingUp, Clock, Star } from "lucide-react"
+import { useTeamAnalytics } from "@/hooks/use-team-analytics"
 
 interface TeamMember {
     id: number
@@ -21,13 +22,9 @@ interface PerformanceAnalyticsTabProps {
 export default function PerformanceAnalyticsTab({ teamMembers }: PerformanceAnalyticsTabProps) {
     const activeMembers = teamMembers.filter(m => m.status === "Active").length
     const totalMembers = teamMembers.length
+    const { data: analytics, isLoading: loadingAnalytics } = useTeamAnalytics()
 
-    // Dummy data for top performers until practice sessions are implemented
-    const dummyTopPerformers = [
-        { id: 1, name: "John Smith", email: "john@company.com", role: "Sales Rep", score: 92, status: "Active" },
-        { id: 2, name: "Sarah Johnson", email: "sarah@company.com", role: "Sales Rep", score: 88, status: "Active" },
-        { id: 3, name: "Mike Davis", email: "mike@company.com", role: "Sales Rep", score: 85, status: "Active" },
-    ]
+    const topPerformers = analytics?.topPerformers || []
 
     return (
         <div className="space-y-6 animate-in fade-in-50 duration-300">
@@ -40,10 +37,9 @@ export default function PerformanceAnalyticsTab({ teamMembers }: PerformanceAnal
                         <TrendingUp className="h-4 w-4 text-gray-400" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-gray-900">85.2</div>
+                        <div className="text-2xl font-bold text-gray-900">{analytics?.avgScore || '0'}</div>
                         <div className="flex items-center space-x-2 mt-1">
-                            <p className="text-xs text-gray-500">from last month</p>
-                            <Badge className="bg-blue-100 text-blue-700 text-xs">+2.1%</Badge>
+                            <p className="text-xs text-gray-500">Team average</p>
                         </div>
                     </CardContent>
                 </Card>
@@ -67,10 +63,9 @@ export default function PerformanceAnalyticsTab({ teamMembers }: PerformanceAnal
                         <Clock className="h-4 w-4 text-gray-400" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-gray-900">47</div>
+                        <div className="text-2xl font-bold text-gray-900">{analytics?.thisWeekSessions || 0}</div>
                         <div className="flex items-center space-x-2 mt-1">
                             <p className="text-xs text-gray-500">this week</p>
-                            <Badge className="bg-blue-100 text-blue-700 text-xs">+8</Badge>
                         </div>
                     </CardContent>
                 </Card>
@@ -85,7 +80,12 @@ export default function PerformanceAnalyticsTab({ teamMembers }: PerformanceAnal
                 </CardHeader>
                 <CardContent>
                     <div className="space-y-4">
-                        {dummyTopPerformers.map((member, index) => (
+                        {topPerformers.length === 0 ? (
+                            <div className="text-center py-8 text-gray-500">
+                                No performance data yet
+                            </div>
+                        ) : (
+                            topPerformers.map((member: any, index: number) => (
                                 <div key={member.id} className="flex items-center space-x-4">
                                     <div
                                         className="flex items-center justify-center w-8 h-8 rounded-full text-white text-sm font-bold"
@@ -100,7 +100,7 @@ export default function PerformanceAnalyticsTab({ teamMembers }: PerformanceAnal
                                         <AvatarFallback className="bg-blue-100 text-blue-600">
                                             {member.name
                                                 .split(" ")
-                                                .map((n) => n[0])
+                                                .map((n: string) => n[0])
                                                 .join("")}
                                         </AvatarFallback>
                                     </Avatar>
@@ -113,7 +113,8 @@ export default function PerformanceAnalyticsTab({ teamMembers }: PerformanceAnal
                                         <span className="font-bold text-gray-900">{member.score}</span>
                                     </div>
                                 </div>
-                            ))}
+                            ))
+                        )}
                     </div>
                 </CardContent>
             </Card>

@@ -10,7 +10,8 @@ const tabs = [
     { id: "company-management", label: "Company Management", icon: Building2, href: "/admin/company-management" },
     { id: "account-management", label: "Account Management", icon: Users, href: "/admin/account-management" },
     { id: "subscription-billing", label: "Subscription & Billing", icon: CreditCard, href: "/admin/subscription-billing" },
-    { id: "team-user-oversight", label: "Team & User Oversight", icon: Shield, href: "/admin/team-user-oversight" }
+    { id: "team-user-oversight", label: "Team & User Oversight", icon: Shield, href: "/admin/team-user-oversight" },
+    { id: "analytics", label: "Platform Analytics", icon: BarChart3, href: "/admin/analytics" }
 ]
 
 export function DesktopNavigation() {

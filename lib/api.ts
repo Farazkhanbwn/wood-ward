@@ -438,6 +438,13 @@ export const api = {
     return res.json();
   },
 
+  async getTeamAnalytics() {
+    const res = await fetch(`${API_URL}/coach/team-analytics`, {
+      credentials: 'include',
+    });
+    return res.json();
+  },
+
   async generatePlaybookContent(formData: any) {
     const res = await fetch(`${VOICE_API_URL}/api/sales-playbook/generate`, {
       method: 'POST',
@@ -449,5 +456,34 @@ export const api = {
       throw new Error(json.message || 'Failed to generate playbook');
     }
     return json;
+  },
+
+  // Admin Analytics APIs
+  async getPlatformStats() {
+    const res = await fetch(`${API_URL}/admin/platform-stats`, {
+      credentials: 'include',
+    });
+    return res.json();
+  },
+
+  async getCompanyStats() {
+    const res = await fetch(`${API_URL}/admin/company-stats`, {
+      credentials: 'include',
+    });
+    return res.json();
+  },
+
+  async getUserCallSessions(userId: string, limit = 10, skip = 0) {
+    const res = await fetch(`${API_URL}/admin/users/${userId}/call-sessions?limit=${limit}&skip=${skip}`, {
+      credentials: 'include',
+    });
+    return res.json();
+  },
+
+  async getUserPlaybooks(userId: string) {
+    const res = await fetch(`${API_URL}/playbooks/user/${userId}`, {
+      credentials: 'include',
+    });
+    return res.json();
   },
 };

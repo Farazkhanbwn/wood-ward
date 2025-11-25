@@ -1,8 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { useQuery } from "@tanstack/react-query"
-import { api } from "@/lib/api"
+import { usePlaybooks } from "@/hooks/use-playbooks"
+import { useDashboardStats, useCallSessions } from "@/hooks/use-call-sessions"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
@@ -32,27 +32,11 @@ export function DashboardTab({ onNavigate }: DashboardTabProps) {
     scriptType: "call",
   })
 
-  const { data: playbooksData } = useQuery({
-    queryKey: ['playbooks'],
-    queryFn: async () => {
-      const response = await api.getPlaybooks()
-      if (response.success) {
-        return response.playbooks
-      }
-      return []
-    },
-  })
+  const { data: playbooksData } = usePlaybooks()
+  const { data: dashboardStats, isLoading: isLoadingStats } = useDashboardStats()
+  const { data: allSessionsData } = useCallSessions(100, 0)
 
-  const { data: dashboardStats, isLoading: isLoadingStats } = useQuery({
-    queryKey: ['dashboardStats'],
-    queryFn: async () => {
-      const response = await api.getDashboardStats()
-      if (response.success) {
-        return response.stats
-      }
-      return null
-    },
-  })
+  const allSessions = allSessionsData?.sessions || []
 
   const playbookCount = playbooksData?.length ?? null
 
@@ -67,7 +51,7 @@ export function DashboardTab({ onNavigate }: DashboardTabProps) {
     },
     {
       title: "Call Simulations",
-      value: dashboardStats?.totalSessions?.toString() || "0",
+      value: allSessions.length.toString(),
       description: "Practice sessions completed",
       icon: Phone,
       color: "text-green-600",
@@ -75,7 +59,9 @@ export function DashboardTab({ onNavigate }: DashboardTabProps) {
     },
     {
       title: "Average Score",
-      value: dashboardStats?.averageScore || "0",
+      value: allSessions.length > 0 
+        ? (allSessions.reduce((sum: number, s: any) => sum + (s.feedback?.overallScore || 0), 0) / allSessions.length).toFixed(1)
+        : "0",
       description: "Out of 100 points",
       icon: Star,
       color: "text-yellow-600",
@@ -83,7 +69,9 @@ export function DashboardTab({ onNavigate }: DashboardTabProps) {
     },
     {
       title: "Time Practiced",
-      value: dashboardStats?.totalHours ? `${dashboardStats.totalHours}h` : "0h",
+      value: allSessions.length > 0
+        ? `${(allSessions.reduce((sum: number, s: any) => sum + (s.duration || 0), 0) / 3600).toFixed(1)}h`
+        : "0h",
       description: "Total practice time",
       icon: Clock,
       color: "text-purple-600",
