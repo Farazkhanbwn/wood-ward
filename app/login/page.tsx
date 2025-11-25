@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -20,18 +20,21 @@ export default function LoginPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
+  const hasCheckedAuth = useRef(false)
+
   useEffect(() => {
     const message = searchParams.get('message')
     if (message) {
       toast.success(message)
     }
 
-    // Check if already logged in
+    if (hasCheckedAuth.current) return
+    hasCheckedAuth.current = true
+
     const checkAuth = async () => {
       try {
         const response = await api.verifyAuth()
         if (response.user) {
-          // Redirect based on role
           const roleRoutes: Record<string, string> = {
             admin: '/admin/company-management',
             coach: '/coach/team-management',
