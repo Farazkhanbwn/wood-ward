@@ -32,40 +32,60 @@ function decodeToken(token: string): { role: string; exp?: number } | null {
 }
 
 export function middleware(request: NextRequest) {
+  const token = request.cookies.get('token')
   const pathname = request.nextUrl.pathname
 
-  // Allow setup pages
+  // Allow setup pages FIRST - without any token checks
   if (pathname === '/coach-setup' || pathname === '/rep-setup') {
-    return applyNoCacheHeaders(NextResponse.next())
+    const response = NextResponse.next()
+    if (token) {
+      response.cookies.delete('token')
+    }
+    return applyNoCacheHeaders(response)
   }
 
-  // Add cache control headers for protected routes
+  // Protected routes
   const protectedRoutes = ['/admin', '/coach', '/sales']
   const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route))
 
+  // Add cache control headers for ALL protected routes (with or without token)
   if (isProtectedRoute) {
+    // If no token, redirect to login
+    if (!token) {
+      return applyNoCacheHeaders(NextResponse.redirect(new URL('/login', request.url)))
+    }
+
+    // If token exists, continue with cache headers
     const response = NextResponse.next()
     response.headers.set('Surrogate-Control', 'no-store')
     return applyNoCacheHeaders(response)
   }
 
-  // Redirect logged-in users away from login/signup pages
-  if (pathname === '/login' || pathname === '/signup') {
-    const token = request.cookies.get('token')?.value
+  // If logged in and trying to access login/signup, redirect to appropriate dashboard
+  if (token && (pathname === '/login' || pathname === '/signup')) {
+    const payload = decodeToken(token.value)
     
-    if (token) {
-      const payload = decodeToken(token)
-      if (payload) {
-        const dashboardRoutes: Record<string, string> = {
-          admin: '/admin/company-management',
-          coach: '/coach/team-management',
-          sales: '/sales'
-        }
-        const redirectUrl = dashboardRoutes[payload.role] || '/sales'
-        return NextResponse.redirect(new URL(redirectUrl, request.url))
-      }
+    if (!payload) {
+      // Invalid or expired token, clear it and allow access
+      const response = NextResponse.next()
+      response.cookies.delete('token')
+      return response
     }
     
+    const roleRoutes: Record<string, string> = {
+      admin: '/admin/company-management',
+      coach: '/coach/team-management',
+      sales: '/sales'
+    }
+    
+    const redirectPath = roleRoutes[payload.role]
+    if (redirectPath) {
+      return applyNoCacheHeaders(NextResponse.redirect(new URL(redirectPath, request.url)))
+    }
+  }
+
+  // Add cache headers for login/signup pages
+  if (pathname === '/login' || pathname === '/signup') {
     return applyNoCacheHeaders(NextResponse.next())
   }
 

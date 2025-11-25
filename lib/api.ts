@@ -68,15 +68,9 @@ export const api = {
   },
 
   async verifyAuth() {
-    const res = await fetch(`${API_URL}/auth/verify`, {
+    const res = await fetchWithAuth(`${API_URL}/auth/verify`, {
       credentials: 'include',
     });
-    
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(text || 'Verification failed');
-    }
-    
     return res.json();
   },
 
