@@ -49,8 +49,23 @@ export function middleware(request: NextRequest) {
     return applyNoCacheHeaders(response)
   }
 
-  // Add cache headers for login/signup pages
+  // Redirect logged-in users away from login/signup pages
   if (pathname === '/login' || pathname === '/signup') {
+    const token = request.cookies.get('token')?.value
+    
+    if (token) {
+      const payload = decodeToken(token)
+      if (payload) {
+        const dashboardRoutes: Record<string, string> = {
+          admin: '/admin/company-management',
+          coach: '/coach/team-management',
+          sales: '/sales'
+        }
+        const redirectUrl = dashboardRoutes[payload.role] || '/sales'
+        return NextResponse.redirect(new URL(redirectUrl, request.url))
+      }
+    }
+    
     return applyNoCacheHeaders(NextResponse.next())
   }
 

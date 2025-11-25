@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -20,37 +20,12 @@ export default function LoginPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  const hasCheckedAuth = useRef(false)
-
   useEffect(() => {
     const message = searchParams.get('message')
     if (message) {
       toast.success(message)
     }
-
-    if (hasCheckedAuth.current) return
-    hasCheckedAuth.current = true
-
-    const checkAuth = async () => {
-      try {
-        const response = await api.verifyAuth()
-        if (response.user) {
-          const roleRoutes: Record<string, string> = {
-            admin: '/admin/company-management',
-            coach: '/coach/team-management',
-            sales: '/sales'
-          }
-          const redirectPath = roleRoutes[response.user.role]
-          if (redirectPath) {
-            router.replace(redirectPath)
-          }
-        }
-      } catch (error) {
-        // Not logged in, stay on login page
-      }
-    }
-    checkAuth()
-  }, [searchParams, router])
+  }, [searchParams])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
