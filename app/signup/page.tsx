@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import Link from "next/link"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { api } from "@/lib/api"
 import { toast } from "sonner"
@@ -29,6 +29,30 @@ export default function SignupPage() {
 
   const [isSuccess, setIsSuccess] = useState(false)
   const [userEmail, setUserEmail] = useState("")
+
+  useEffect(() => {
+    // Check if already logged in
+    const checkAuth = async () => {
+      try {
+        const response = await api.verifyAuth()
+        if (response.user) {
+          // Redirect based on role
+          const roleRoutes: Record<string, string> = {
+            admin: '/admin/company-management',
+            coach: '/coach/team-management',
+            sales: '/sales'
+          }
+          const redirectPath = roleRoutes[response.user.role]
+          if (redirectPath) {
+            router.replace(redirectPath)
+          }
+        }
+      } catch (error) {
+        // Not logged in, stay on signup page
+      }
+    }
+    checkAuth()
+  }, [router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
