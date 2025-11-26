@@ -4,13 +4,6 @@ const VOICE_API_URL = process.env.NEXT_PUBLIC_VOICE_API_URL || 'http://172.184.1
 // Global fetch wrapper to handle 401 responses
 const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
   const res = await fetch(url, options);
-  
-  if (res.status === 401 && typeof window !== 'undefined') {
-    // User deleted or token invalid, redirect to login
-    window.location.href = '/login';
-    return res;
-  }
-  
   return res;
 };
 
