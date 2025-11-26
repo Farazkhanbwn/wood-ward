@@ -35,6 +35,10 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get('token')
   const pathname = request.nextUrl.pathname
 
+  console.log('🔍 Middleware - Path:', pathname)
+  console.log('🍪 Middleware - Token present:', !!token)
+  console.log('🍪 All cookies:', request.cookies.getAll().map(c => c.name))
+
   // Allow setup pages FIRST - without any token checks
   if (pathname === '/coach-setup' || pathname === '/rep-setup') {
     const response = NextResponse.next()
