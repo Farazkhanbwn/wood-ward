@@ -1,12 +1,33 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 const VOICE_API_URL = process.env.NEXT_PUBLIC_VOICE_API_URL || 'http://172.184.104.225:5000';
 
-// Global fetch wrapper to handle 401 responses
+// Get token from localStorage
+const getToken = () => {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('token');
+  }
+  return null;
+};
+
+// Global fetch wrapper to handle 401 responses and add Authorization header
 const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
-  const res = await fetch(url, options);
+  const token = getToken();
+  const headers: Record<string, string> = {
+    ...(options.headers as Record<string, string>),
+  };
+  
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  
+  const res = await fetch(url, {
+    ...options,
+    headers,
+  });
   
   if (res.status === 401 && typeof window !== 'undefined') {
-    // User deleted or token invalid, redirect to login
+    // User deleted or token invalid, clear token and redirect to login
+    localStorage.removeItem('token');
     window.location.href = '/login';
     return res;
   }
@@ -56,14 +77,26 @@ export const api = {
     if (!res.ok) {
       throw new Error(json.message || 'Login failed');
     }
+    
+    // Save token to localStorage
+    if (json.token && typeof window !== 'undefined') {
+      localStorage.setItem('token', json.token);
+    }
+    
     return json;
   },
 
   async logout() {
-    const res = await fetch(`${API_URL}/auth/logout`, {
+    const res = await fetchWithAuth(`${API_URL}/auth/logout`, {
       method: 'POST',
       credentials: 'include',
     });
+    
+    // Clear token from localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('token');
+    }
+    
     return res.json();
   },
 
@@ -116,7 +149,7 @@ export const api = {
 
   // Playbook APIs
   async createPlaybook(data: any) {
-    const res = await fetch(`${API_URL}/playbooks`, {
+    const res = await fetchWithAuth(`${API_URL}/playbooks`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -133,14 +166,14 @@ export const api = {
   },
 
   async getPlaybookById(id: string) {
-    const res = await fetch(`${API_URL}/playbooks/${id}`, {
+    const res = await fetchWithAuth(`${API_URL}/playbooks/${id}`, {
       credentials: 'include',
     });
     return res.json();
   },
 
   async updatePlaybook(id: string, data: any) {
-    const res = await fetch(`${API_URL}/playbooks/${id}`, {
+    const res = await fetchWithAuth(`${API_URL}/playbooks/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -150,7 +183,7 @@ export const api = {
   },
 
   async deletePlaybook(id: string) {
-    const res = await fetch(`${API_URL}/playbooks/${id}`, {
+    const res = await fetchWithAuth(`${API_URL}/playbooks/${id}`, {
       method: 'DELETE',
       credentials: 'include',
     });
@@ -159,7 +192,7 @@ export const api = {
 
   // Coach APIs
   async addRep(data: { name: string; email: string; phone: string }) {
-    const res = await fetch(`${API_URL}/coach/add-rep`, {
+    const res = await fetchWithAuth(`${API_URL}/coach/add-rep`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -180,7 +213,7 @@ export const api = {
   },
 
   async removeRep(repId: string) {
-    const res = await fetch(`${API_URL}/coach/remove-rep/${repId}`, {
+    const res = await fetchWithAuth(`${API_URL}/coach/remove-rep/${repId}`, {
       method: 'DELETE',
       credentials: 'include',
     });
@@ -209,7 +242,7 @@ export const api = {
 
   // Admin APIs
   async addCompany(data: { name: string; ownerName: string; ownerEmail: string; status: string }) {
-    const res = await fetch(`${API_URL}/admin/add-company`, {
+    const res = await fetchWithAuth(`${API_URL}/admin/add-company`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -223,14 +256,14 @@ export const api = {
   },
 
   async getCompanies() {
-    const res = await fetch(`${API_URL}/admin/companies`, {
+    const res = await fetchWithAuth(`${API_URL}/admin/companies`, {
       credentials: 'include',
     });
     return res.json();
   },
 
   async updateCompany(companyId: string, data: { name: string; ownerName: string; ownerEmail: string; status: string }) {
-    const res = await fetch(`${API_URL}/admin/update-company/${companyId}`, {
+    const res = await fetchWithAuth(`${API_URL}/admin/update-company/${companyId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -244,7 +277,7 @@ export const api = {
   },
 
   async deleteCompany(companyId: string) {
-    const res = await fetch(`${API_URL}/admin/delete-company/${companyId}`, {
+    const res = await fetchWithAuth(`${API_URL}/admin/delete-company/${companyId}`, {
       method: 'DELETE',
       credentials: 'include',
     });
@@ -256,14 +289,14 @@ export const api = {
   },
 
   async getAllUsers() {
-    const res = await fetch(`${API_URL}/admin/users`, {
+    const res = await fetchWithAuth(`${API_URL}/admin/users`, {
       credentials: 'include',
     });
     return res.json();
   },
 
   async createUser(data: { name: string; email: string; userType: string; companyId?: string; role: string; status: string }) {
-    const res = await fetch(`${API_URL}/admin/create-user`, {
+    const res = await fetchWithAuth(`${API_URL}/admin/create-user`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -277,7 +310,7 @@ export const api = {
   },
 
   async updateUser(userId: string, data: { name: string; email: string; role: string; status: string }) {
-    const res = await fetch(`${API_URL}/admin/users/${userId}`, {
+    const res = await fetchWithAuth(`${API_URL}/admin/users/${userId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -291,7 +324,7 @@ export const api = {
   },
 
   async deleteUser(userId: string) {
-    const res = await fetch(`${API_URL}/admin/users/${userId}`, {
+    const res = await fetchWithAuth(`${API_URL}/admin/users/${userId}`, {
       method: 'DELETE',
       credentials: 'include',
     });
@@ -303,7 +336,7 @@ export const api = {
   },
 
   async sendUpgradeLink(userId: string, data: { plan: string; billingCycle: string }) {
-    const res = await fetch(`${API_URL}/admin/users/${userId}/send-upgrade-link`, {
+    const res = await fetchWithAuth(`${API_URL}/admin/users/${userId}/send-upgrade-link`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -313,7 +346,7 @@ export const api = {
   },
 
   async updateUserSubscription(userId: string, data: { plan: string; status: string; billingCycle: string; nextBillingDate?: string }) {
-    const res = await fetch(`${API_URL}/admin/users/${userId}/subscription`, {
+    const res = await fetchWithAuth(`${API_URL}/admin/users/${userId}/subscription`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -323,7 +356,7 @@ export const api = {
   },
 
   async createPaymentSession(priceId: string) {
-    const res = await fetch(`${API_URL}/payment/create-checkout-session`, {
+    const res = await fetchWithAuth(`${API_URL}/payment/create-checkout-session`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -333,7 +366,7 @@ export const api = {
   },
 
   async verifyPaymentSession(sessionId: string) {
-    const res = await fetch(`${API_URL}/payment/verify-session`, {
+    const res = await fetchWithAuth(`${API_URL}/payment/verify-session`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -343,7 +376,7 @@ export const api = {
   },
 
   async getUserSessions(userId: string) {
-    const res = await fetch(`${API_URL}/admin/users/${userId}/sessions`, {
+    const res = await fetchWithAuth(`${API_URL}/admin/users/${userId}/sessions`, {
       credentials: 'include',
     });
     return res.json();
@@ -374,7 +407,7 @@ export const api = {
 
   // Call Session APIs
   async saveCallSession(data: any) {
-    const res = await fetch(`${API_URL}/call-sessions/sessions`, {
+    const res = await fetchWithAuth(`${API_URL}/call-sessions/sessions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -384,28 +417,28 @@ export const api = {
   },
 
   async getCallSessions(limit = 10, skip = 0) {
-    const res = await fetch(`${API_URL}/call-sessions/sessions?limit=${limit}&skip=${skip}`, {
+    const res = await fetchWithAuth(`${API_URL}/call-sessions/sessions?limit=${limit}&skip=${skip}`, {
       credentials: 'include',
     });
     return res.json();
   },
 
   async getDashboardStats() {
-    const res = await fetch(`${API_URL}/call-sessions/stats`, {
+    const res = await fetchWithAuth(`${API_URL}/call-sessions/stats`, {
       credentials: 'include',
     });
     return res.json();
   },
 
   async getCallSessionById(id: string) {
-    const res = await fetch(`${API_URL}/call-sessions/sessions/${id}`, {
+    const res = await fetchWithAuth(`${API_URL}/call-sessions/sessions/${id}`, {
       credentials: 'include',
     });
     return res.json();
   },
 
   async deleteCallSession(id: string) {
-    const res = await fetch(`${API_URL}/call-sessions/sessions/${id}`, {
+    const res = await fetchWithAuth(`${API_URL}/call-sessions/sessions/${id}`, {
       method: 'DELETE',
       credentials: 'include',
     });
@@ -432,14 +465,14 @@ export const api = {
     if (filters?.page) params.append('page', filters.page.toString());
     if (filters?.limit) params.append('limit', filters.limit.toString());
 
-    const res = await fetch(`${API_URL}/coach/team-sessions?${params.toString()}`, {
+    const res = await fetchWithAuth(`${API_URL}/coach/team-sessions?${params.toString()}`, {
       credentials: 'include',
     });
     return res.json();
   },
 
   async getTeamAnalytics() {
-    const res = await fetch(`${API_URL}/coach/team-analytics`, {
+    const res = await fetchWithAuth(`${API_URL}/coach/team-analytics`, {
       credentials: 'include',
     });
     return res.json();
@@ -460,28 +493,28 @@ export const api = {
 
   // Admin Analytics APIs
   async getPlatformStats() {
-    const res = await fetch(`${API_URL}/admin/platform-stats`, {
+    const res = await fetchWithAuth(`${API_URL}/admin/platform-stats`, {
       credentials: 'include',
     });
     return res.json();
   },
 
   async getCompanyStats() {
-    const res = await fetch(`${API_URL}/admin/company-stats`, {
+    const res = await fetchWithAuth(`${API_URL}/admin/company-stats`, {
       credentials: 'include',
     });
     return res.json();
   },
 
   async getUserCallSessions(userId: string, limit = 10, skip = 0) {
-    const res = await fetch(`${API_URL}/admin/users/${userId}/call-sessions?limit=${limit}&skip=${skip}`, {
+    const res = await fetchWithAuth(`${API_URL}/admin/users/${userId}/call-sessions?limit=${limit}&skip=${skip}`, {
       credentials: 'include',
     });
     return res.json();
   },
 
   async getUserPlaybooks(userId: string) {
-    const res = await fetch(`${API_URL}/playbooks/user/${userId}`, {
+    const res = await fetchWithAuth(`${API_URL}/playbooks/user/${userId}`, {
       credentials: 'include',
     });
     return res.json();
